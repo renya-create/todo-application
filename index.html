@@ -32,6 +32,18 @@
     <div class="container">
         <h1>魂のToDo</h1>
         <h2>〜明日やろうは馬鹿野郎〜</h2>
+
+        <!-- ログイン/ログアウトUI -->
+        <div id="user-status">
+            <div id="login-container">
+                <button id="login-button">Googleでログイン</button>
+            </div>
+            <div id="user-info" style="display: none;">
+                <span id="user-name"></span>
+                <button id="logout-button">ログアウト</button>
+            </div>
+        </div>
+        
         <div class="todo-input">
             <input type="text" id="todo-input" placeholder="タスクを入力...">
             <button id="add-button">追加</button>

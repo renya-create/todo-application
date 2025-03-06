@@ -6,14 +6,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterButtons = document.querySelectorAll('.filter-btn');
     const tasksCounter = document.getElementById('tasks-counter');
     const clearCompletedBtn = document.getElementById('clear-completed');
+    const loginButton = document.getElementById('login-button');
+    const logoutButton = document.getElementById('logout-button');
+    const userInfo = document.getElementById('user-info');
+    const loginContainer = document.getElementById('login-container');
+    const userName = document.getElementById('user-name');
 
-    // ローカルストレージからタスクを読み込む
-    let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+    const db = firebase.database();
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    // ユーザーデータ
+    let currentUser = null;
+    let todos = [];
     let currentFilter = 'all';
 
-    // タスクの初期表示
-    renderTodos();
-    updateTasksCounter();
+    // 認証状態の監視
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            // ユーザーがログインしている場合
+            currentUser = user;
+            loginContainer.style.display = 'none';
+            userInfo.style.display = 'block';
+            userName.textContent = `${user.displayName || 'ユーザー'}さん`;
+            
+            // ユーザー固有のデータを読み込む
+            loadTodos(user.uid);
+        } else {
+            // ユーザーがログアウトしている場合
+            currentUser = null;
+            loginContainer.style.display = 'block';
+            userInfo.style.display = 'none';
+            todos = [];
+            renderTodos();
+            updateTasksCounter();
+        }
+    });
+
+    // ログインボタンのイベントリスナー
+    loginButton.addEventListener('click', () => {
+        auth.signInWithPopup(provider).catch(error => {
+            console.error('ログインエラー:', error);
+            alert('ログインに失敗しました。');
+        });
+    });
+
+    // ログアウトボタンのイベントリスナー
+    logoutButton.addEventListener('click', () => {
+        auth.signOut().catch(error => {
+            console.error('ログアウトエラー:', error);
+        });
+    });
 
     // タスク追加ボタンのイベントリスナー
     addButton.addEventListener('click', addTodo);
@@ -37,25 +81,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 完了したタスクをクリアするボタンのイベントリスナー
     clearCompletedBtn.addEventListener('click', () => {
+        if (!currentUser) return;
+
         todos = todos.filter(todo => !todo.completed);
         saveTodos();
         renderTodos();
         updateTasksCounter();
     });
 
-    // タスク追加関数
-    function addTodo() {
-        const text = todoInput.value.trim();
-        if (text) {
-            const todo = {
-                id: Date.now(),
-                text: text,
-                completed: false
-            };
-            todos.push(todo);
-            saveTodos();
+    // Firebase からタスクを読み込む
+    function loadTodos(userId) {
+        const userTodosRef = db.ref(`todos/${userId}`);
+        
+        userTodosRef.on('value', snapshot => {
+            const data = snapshot.val();
+            todos = data ? Object.keys(data).map(key => ({
+                id: key,
+                ...data[key]
+            })) : [];
+            
             renderTodos();
             updateTasksCounter();
+        });
+    }
+
+    // タスク追加関数
+    function addTodo() {
+        if (!currentUser) {
+            alert('タスクを追加するにはログインしてください。');
+            return;
+        }
+        
+        const text = todoInput.value.trim();
+        if (text) {
+            // Firebase に新しいタスクを追加
+            const newTodoRef = db.ref(`todos/${currentUser.uid}`).push();
+            
+            newTodoRef.set({
+                text: text,
+                completed: false,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            
             todoInput.value = '';
             todoInput.focus();
         }
@@ -63,23 +130,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // タスク削除関数
     function deleteTodo(id) {
-        todos = todos.filter(todo => todo.id !== id);
-        saveTodos();
-        renderTodos();
-        updateTasksCounter();
+        if (!currentUser) return;
+        
+        db.ref(`todos/${currentUser.uid}/${id}`).remove();
     }
 
     // タスク完了状態切り替え関数
     function toggleComplete(id) {
-        todos = todos.map(todo => {
-            if (todo.id === id) {
-                todo.completed = !todo.completed;
-            }
-            return todo;
-        });
-        saveTodos();
-        renderTodos();
-        updateTasksCounter();
+        if (!currentUser) return;
+        
+        const todoRef = db.ref(`todos/${currentUser.uid}/${id}`);
+        const todo = todos.find(t => t.id === id);
+        
+        if (todo) {
+            todoRef.update({
+                completed: !todo.completed
+            });
+        }
     }
 
     // タスク表示関数
@@ -122,11 +189,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 残りタスク数更新関数
     function updateTasksCounter() {
         const remainingTasks = todos.filter(todo => !todo.completed).length;
-        tasksCounter.textContent = `${remainingTasks} タスク残っています`;
+        tasksCounter.textContent = `${remainingTasks} タスク残っています。`;
     }
 
-    // ローカルストレージにタスクを保存
+    // Firebase にタスクを保存する関数（一括更新用）
     function saveTodos() {
-        localStorage.setItem('todos', JSON.stringify(todos));
+        if (!currentUser) return;
+        
+        const updates = {};
+        todos.forEach(todo => {
+            updates[todo.id] = {
+                text: todo.text,
+                completed: todo.completed,
+                createdAt: todo.createdAt || firebase.database.ServerValue.TIMESTAMP
+            };
+        });
+        
+        db.ref(`todos/${currentUser.uid}`).set(updates);
     }
 });
