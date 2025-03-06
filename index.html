@@ -1,16 +1,37 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ToDoアプリ</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="./favicon.ico">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ToDoアプリ</title>
+        <link rel="stylesheet" href="styles.css">
+        <link rel="icon" type="image/x-icon" href="./favicon.ico">
+        
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+        
+        <script>
+            // Firebaseの構成
+            const firebaseConfig = {
+                apiKey: "AIzaSyDXgYHE2RdXSAPEjzZJR8naMlV79bR6nVo",
+                authDomain: "todo-application-c3114.firebaseapp.com",
+                databaseURL: "https://todo-application-c3114-default-rtdb.firebaseio.com",
+                projectId: "todo-application-c3114",
+                storageBucket: "todo-application-c3114.firebasestorage.app",
+                messagingSenderId: "693165238128",
+                appId: "1:693165238128:web:9352baea9088aaa68b91b5"
+            };
+    
+            // Firebaseの初期化
+            firebase.initializeApp(firebaseConfig);
+        </script>
+    </head>
 <body>
     <div class="container">
-        <h1>ガチで危機感持った方がいいと思う。</h1>
-        <h2></h2>
+        <h1>魂のToDo</h1>
+        <h2>〜明日やろうは馬鹿野郎〜</h2>
         <div class="todo-input">
             <input type="text" id="todo-input" placeholder="タスクを入力...">
             <button id="add-button">追加</button>
