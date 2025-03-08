@@ -30,6 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
             loginContainer.style.display = 'none';
             userInfo.style.display = 'block';
             userName.textContent = `${user.displayName || 'ユーザー'}さん`;
+
+            // デバッグ情報を追加
+            const uid = user.uid;
+            const displayName = user.displayName; // 表示名（ある場合）
+            const email = user.email; // メールアドレス（ある場合）
+            console.log("UID:", uid);
+            console.log("Display Name:", displayName);
+            console.log("Email:", email);
             
             // ユーザー固有のデータを読み込む
             loadTodos(user.uid);
